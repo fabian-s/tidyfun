@@ -26,6 +26,10 @@ approx_fill_extend <- zoo_wrapper(na.fill, fill = "extend")
 approx_locf <- zoo_wrapper(na.locf, na.rm = FALSE)
 approx_nocb <- zoo_wrapper(na.locf, na.rm = FALSE, fromLast = TRUE)
 
+has_vd <- function(f) {
+  is_irreg(f) & 
+    (length(attr(f, "domain")) == length(f) | length(f) != 1)
+}
 in_range <- function(x, r){
   r <- range(r, na.rm = TRUE)
   x >= r[1] & x <= r[2]

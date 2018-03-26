@@ -8,10 +8,13 @@ new_feval <- function(argvals, datalist, regular, domain, evaluator, signif = 4)
   argvals_o <- map(argvals, order)
   argvals <- map2(argvals, argvals_o, ~.x[.y])
   datalist <- map2(datalist, argvals_o, ~.x[.y])
-  domain <- signif(domain %||% range(argvals, na.rm = TRUE), signif)
+  domain <- ensure_list(domain %||% range(argvals, na.rm = TRUE)) %>% 
+    map(~signif(.x, signif))
   if (!regular) {
     datalist <- map2(datalist, argvals, 
-      ~ list(argvals = signif(.y[!is.na(.x)], signif), data = .x[!is.na(.x)]))
+      ~ list(argvals = signif(.y[!is.na(.x)], signif), 
+                data = .x[!is.na(.x)])) %>% 
+      map(domain, ~.x[in_range(.x$argvals, .y), ])
     argvals <- numeric(0)
     class <- "feval_irreg"
   } else {
@@ -71,7 +74,7 @@ feval <- function(data, ...) UseMethod("feval")
 #' @rdname feval
 #' @param argvals `numeric`, or list of `numeric`s. The evaluation grid. See Details.
 #'  For the `data.frame`-methods: the name/number of the column defining the evaluation grid.
-#' @param domain range of the `argvals`. 
+#' @param domain ranges of the `argvals`. Either a vector or a list of vectors for vrying domains.
 #' @param evaluator a function accepting arguments `x, argvals, evaluations`. See details.
 #' @param signif significant digits of the "resolution" of the evaluation grid.  See details. 
 feval.matrix <- function(data, argvals = NULL, domain = NULL, 
@@ -82,7 +85,7 @@ feval.matrix <- function(data, argvals = NULL, domain = NULL,
   # make factor conversion explicit to avoid reordering
   datalist <- split(data, factor(id, unique(as.character(id))))
   names(datalist) <- rownames(data)
-  regular <- !any(is.na(data))
+  regular <- !any(is.na(data)) & (is.null(domain) | !is.list(domain))
   new_feval(argvals, datalist, regular, domain, substitute(evaluator), signif)
 }
 #' @rdname feval
@@ -110,7 +113,8 @@ feval.data.frame <- function(data, id = 1, argvals = 2, value = 3, domain = NULL
   id <- factor(data[[1]], levels = as.factor(unique(data[[1]])))
   datalist <- split(data[[3]], id)
   argvals <- split(data[[2]], id)
-  regular <- length(argvals) == 1 | all(duplicated(argvals)[-1])
+  regular <- length(argvals) == 1 | all(duplicated(argvals)[-1]) & 
+    (is.null(domain) | !is.list(domain))
   new_feval(argvals, datalist, regular, domain, substitute(evaluator), signif)
 }
 
@@ -142,7 +146,8 @@ feval.list <- function(data, argvals = NULL, domain = NULL,
       all(rapply(data, is.numeric)))
     argvals <- map(data, ~ unlist(.x[, 1]))
     data <- map(data, ~ unlist(.x[, 2]))
-    regular <- (length(data) == 1 | all(duplicated(argvals)[-1])) 
+    regular <- (length(data) == 1 | all(duplicated(argvals)[-1])) & 
+      (is.null(domain) | !is.list(domain))
   }
   new_feval(argvals, data, regular = regular, domain = domain, 
     evaluator = substitute(evaluator), signif = signif)

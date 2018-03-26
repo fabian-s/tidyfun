@@ -43,7 +43,7 @@ fpc_fbase <- function(data, domain = NULL, smooth = TRUE, signif = 4, ...) {
   fpc_basis <- feval(fpc, argvals = argvals, evaluator = approx_spline)
   fpc_constructor <- fpc_wrapper(fpc_basis)
   structure(coef_list, 
-    domain = domain %||% range(argvals),
+    domain = ensure_list(domain %||% range(argvals)),
     basis = fpc_constructor,
     basis_label = paste0("FPC: ", fpc_spec$npc, " components."),
     basis_matrix = t(fpc),

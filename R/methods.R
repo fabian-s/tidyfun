@@ -46,10 +46,21 @@ n_evaluations.feval_irreg <- function(f) map_int(evaluations(f), length)
 n_evaluations.feval_reg <- function(f) length(argvals(f))
 
 #' @rdname fvectormethods
+#' @param joint return the maximal extent of the `fvector`'s domains or the 
+#'  separate domains of each element (only relevant for irregular `fevals`
+#'  with varying domains).
 #' @export
-domain <- function(f) {
-  stopifnot(inherits(f, "fvector"))
-  attr(f, "domain")
+domain <- function(f, ...) UseMethod("domain")
+#' @export
+domain.default <- function(f, ...) .NotYetImplemented()
+#' @export
+domain.fvector <- function(f, ...) attr(f, "domain")[[1]]
+#' @export
+domain.feval_irreg <- function(f, joint = TRUE, ...) {
+  domain <- attr(f, "domain")
+  if (!joint & length(domain) > 1) return(domain)
+  domain <- do.call(cbind, domain)
+  c(min(domain[,1]), max(domain[,2]))
 }
   
 #' @export

@@ -112,30 +112,44 @@
     }
   }
   stopifnot(inherits(value, class(x)[1]), 
-    all(domain(x) == domain(value)),
     length(value) %in% c(1, length(i)))
+  if (any(has_vd(x), has_vd(value))) {
+    modify_domain <- TRUE
+  } else {
+    stopifnot(all.equal(domain(x), domain(value)))
+    modify_domain <- FALSE
+  }
   if (inherits(x, "feval_reg") | inherits(x, "fbase")) {
     assert_true(identical(argvals(x), argvals(value)))
   }
+  attr_x <- attributes(x)
+  attr_x$names[i] <- names(value)
   if (is_feval(x)) {
     assert_true(
       identical(evaluator(x), evaluator(value), ignore.environment = TRUE))
+    if (modify_domain) {
+      domain_value <- if (!has_vd(value)) {
+        replicate(length(value), domain(value))
+      } else domain(value)
+      if (!has_vd(x)) attr_x$domain <- replicate(length(x), domain(x))
+      attr_x$domain[i] <- domain_value
+      if (all(duplicated(attr_x$domain)[-1])) {
+        attr_x$domain <- attr_x$domain[1]
+      }
+    }
   } else {
     assert_true(
       identical(basis(x), basis(value), ignore.environment = TRUE))
     assert_true(
       all.equal(attr(x, "basis_matrix"), attr(value, "basis_matrix")))
   }
-  
-  attr_x <- attributes(x)
-  attr_x$names[i] <- names(value)
   ret <- unclass(x)
   ret[i] <- unclass(value)
   # fill up empty functions
   na_entries <- which(sapply(ret, is.null))
   if (length(na_entries)) {
     nas <- if (is_irreg(x)) {
-      replicate(length(na_entries), list(argvals = attr_x$domain[1], data = NA),
+      replicate(length(na_entries), list(argvals = attr_x$domain[[1]][1], data = NA),
         simplify = FALSE) 
     } else {
       replicate(length(na_entries), rep(NA, length(x[[1]]))) 

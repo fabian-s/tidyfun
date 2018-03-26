@@ -48,7 +48,9 @@ c.feval <- function(...) {
   } else NextMethod()  
   compatible <- do.call(rbind, map(funs, 
     ~ compare_fvector_attribs(funs[[1]], .)))
-  stopifnot(all(compatible[, "domain"]))
+  vd_funs <- map(funs, has_vd)
+  stopifnot(all(vd_funs) | 
+    all(compatible[, "domain"]))
   make_irreg <- rep(FALSE, length(funs))
   irreg <- map_lgl(funs, is_irreg)
   if (!any(irreg) & !all(compatible[, "argvals"])) {
@@ -77,6 +79,7 @@ c.feval <- function(...) {
   attr_ret <- attributes(funs[[1]])
   if (any(irreg | make_irreg)) {
     attr_ret$argvals <- flatten(map(funs, argvals))
+    if (any(vd_funs)) attr_ret$domain <- flatten(map(funs, domain, joint = FALSE))
   }
   attr_ret$names <- {
     tmp <- unlist(flatten(map(funs, 

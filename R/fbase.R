@@ -44,9 +44,10 @@ smooth_spec_wrapper <- function(spec, deriv = 0, eps = 1e-6) {
 #' @importFrom stats var na.omit median
 mgcv_fbase <- function(data, regular, domain = NULL,   
     penalized = TRUE, signif = 4, verbose = TRUE, ...) {
+  #TODO: input validation: proper argvals; match argvals <-> domain
   data$argvals <- .adjust_resolution(data$argvals, signif, unique = FALSE)
   argvals_u <- mgcv::uniquecombs(data$argvals, ordered = TRUE)
-  domain <- domain %||% range(argvals_u)
+  domain <- ensure_list(domain %||% range(argvals_u)) %>% map(~signif(.x, signif))
   s_args <- list(...)[names(list(...)) %in% names(formals(mgcv::s))]
   if (!("bs" %in% names(s_args))) s_args$bs <- "cr"
   if (!("k" %in% names(s_args))) s_args$k <- min(25, nrow(argvals_u))
@@ -173,7 +174,7 @@ fbase.data.frame <- function(data, id = 1, argvals = 2, value = 3,
 #' @rdname fbase
 #' @export
 fbase.matrix <- function(data, argvals = NULL, 
-  domain = NULL,   penalized = TRUE, signif = 4, ...) {
+  domain = NULL, penalized = TRUE, signif = 4, ...) {
   argvals <- unlist(find_argvals(data, argvals))
   data_names <- rownames(data)
   data <- mat_2_df(data, argvals)
@@ -230,7 +231,7 @@ fbase.list <- function(data, argvals = NULL,
 fbase.feval <- function(data, argvals = NULL, 
   domain = NULL, penalized = TRUE, signif = 4, ...) {
   argvals <- argvals %||% argvals(data)
-  domain <- domain %||% domain(data)
+  domain <- ensure_list(domain %||% domain(data))
   data <- as.data.frame(data, argvals)
   fbase(data, basis = basis, domain = domain,   
     penalized = penalized, signif = signif, ...)
@@ -241,7 +242,7 @@ fbase.feval <- function(data, argvals = NULL,
 fbase.fbase <- function(data, argvals = NULL,
   domain = NULL, penalized = TRUE, signif = 4, ...) {
   argvals <- argvals %||% argvals(data)
-  domain <- domain %||% domain(data)
+  domain <- ensure_list(domain %||% domain(data))
   s_args <- modifyList(attr(data, "basis_args"),
     list(...)[names(list(...)) %in% names(formals(mgcv::s))])
   names_data <- names(data)
