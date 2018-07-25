@@ -37,7 +37,8 @@ options(
 scale_colour_discrete = scale_colour_viridis_d
 scale_fill_discrete = scale_fill_viridis_d
 
-devtools::load_all("~/fda/tidyfun")
+try(devtools::load_all("~/fda/tidyfun"))
+try(devtools::load_all("~/Work/fda/tidyfun"))
 
 pal_5 = viridis(7)[-(1:2)]
 ```
@@ -46,7 +47,8 @@ pal_5 = viridis(7)[-(1:2)]
 dti = with(refund::DTI, 
   data.frame(id = ID, sex = sex, 
     case = factor(ifelse(case, "MS", "control")))) %>% as.tbl %>% 
-        mutate(cca = tfd(DTI$cca, seq(0,1, l = 93), signif = 2),
+        mutate(cca = tfd(DTI$cca, seq(0,1, l = 93), signif = 2) %>%
+                     tfd(arg = seq(0,1,l = 93)),
                rcst = tfd(DTI$rcst, seq(0, 1, l = 55), signif = 3))
 set.seed(1221)
 ex_data = dti$cca[1:5, seq(0, 1, l = 93), interpolate = TRUE]
@@ -108,8 +110,8 @@ dti
 
 **`tfd`** objects contain "raw" functional data: 
 
- - a list of **`evaluations`** $f_i(t)|_{t=\boldmath{t'}}$ and corresponding **`arg`**s $\boldmath{t'}$
- - the **`domain`**: the range of valid **`arg`**s.
+ - represented as a list of **`evaluations`** $f_i(t)|_{t=\boldmath{t'}}$ and corresponding **`arg`**-vector(s) $\boldmath{t'}$
+ - has a **`domain`**:  a range of valid **`arg`**s.
 
 ```{r}
 ex %>% evaluations() %>% str
@@ -119,18 +121,18 @@ ex %>% domain()
 
 ## **`tf`** subclass: **`tfd`**
 
-- a modifiable **`evaluator`** function that defines how to inter-/extrapolate `evaluations` between `arg`s (and remembers results of previous calls)
+- each **`tfd`**-vector contains an **`evaluator`** function that defines how to inter-/extrapolate `evaluations` between `arg`s (and remembers results of previous calls)
 
 ```{r}
 evaluator(ex) %>% str
 evaluator(ex) = approx_spline 
 ```
 
-## **`tf`** subclass: **`tfd`**
+## **`tf`** subclass: **`tfd`** 
 
-- internal subclasses for regular `tfd` with a common grid and irregular `tfd`.
+- **`tfd`** has subclasses for regular data with a common grid and irregular or sparse data.
 
-```{r, out.height = '.35\\textheight', fig.width = 4, fig.height = 4}
+```{r, out.height = '.30\\textheight', fig.width = 6, fig.height = 4.5}
 dti$rcst[1:2]
 dti$rcst[1:2] %>% arg() %>% str
 dti$rcst[1:2] %>% plot(pch = "x", col = viridis(2))
@@ -140,13 +142,14 @@ dti$rcst[1:2] %>% plot(pch = "x", col = viridis(2))
 
 Functional data in basis representation: 
 
- - keep a list of **`coefficients`** and a corresponding common **`basis_matrix`** of basis function evaluations
- - have an associated **`basis`** function that defines how to compute the basis for new **`arg`**s and how to differentiate/integrate.
- - (internal) flavors: **`mgcv`** spline bases and FPCs (wavelets to be added).
-- significant memory savings for large data:
+ - represented as a list of **`coefficients`** and a common **`basis_matrix`** of basis function evaluations on a vector of `arg`-values.
+ - contains a **`basis`** function that defines how to compute the basis for new **`arg`**s and how to differentiate/integrate.
+ - (internal) flavors: **`mgcv`**-spline bases and FPCs (wavelets to be added)
+- significant memory and time savings:
 ```{r}
-dti$cca %>% object.size()
-dti$cca %>% tfb(verbose = FALSE) %>% object.size()
+refund::DTI$cca %>% object.size() %>% print(units = "Kb")
+dti$cca %>% object.size() %>% print(units = "Kb")
+dti$cca %>% tfb(verbose = FALSE) %>% object.size() %>% print(units = "Kb")
 ```
 
 ## **`tf`** subclass: **`tfb`** spline basis
@@ -183,7 +186,7 @@ lines(tfb(ex, penalized = FALSE, k = 30), col = "blue")
 
 ```{r}
 (ex %>% tfb_fpc(smooth = FALSE, pve = .999))
-(ex %>% tfb_fpc(pve = .95, use))
+(ex %>% tfb_fpc(pve = .95))
 ```
 
 ## **`tf`** subclass: **`tfb`** FPC-based
@@ -242,7 +245,7 @@ names(ex) = n_ex
 ```{r}
 c(mean = mean(ex), sd = sd(ex))
 
-depth(ex) ## Modified Band-2 Depth
+depth(ex) ## Modified Band-2 Depth (à la Sun/Genton/Nychka, 2012), others to come.
 median(ex) == ex[which.max(depth(ex))]
 ```
 
@@ -311,10 +314,10 @@ zoom(ex, 0.2, 0.6) %>% anywhere(value <= median(ex)[,arg])
 to & from list, matrix or data frame with `"id"`,`"arg"`,`"value"`-columns:
 
 ```{r}
-m_ex = ex %>% as.matrix(); m_ex[1:2, 1:3]
-df_ex = ex %>% as.data.frame(); str(df_ex)
-m_ex[1:2, ] %>% tfd()
-tfd(df_ex) == tfd(m_ex)
+ex_matrix = ex %>% as.matrix(); ex_matrix[1:2, 1:3]
+ex_df = ex %>% as.data.frame(); str(ex_df)
+ex_matrix[1:2, ] %>% tfd()
+tfd(ex_df) == tfd(ex_matrix)
 ```
 
 ## Visualize: `base` 
@@ -349,41 +352,48 @@ ggplot(dti) +
 
 ```{r, eval = FALSE}
 ggplot(dti, aes(tf = cca, order = integrate(cca, definite = TRUE))) + 
-  geom_lasagna() + facet_wrap(~ sex)
+  geom_lasagna() + facet_wrap(~ case)
 ```
 ```{r, dti-fig2, echo = FALSE, out.height = '.7\\textheight', fig.width = 12, fig.height = 7}  
 ggplot(dti[1:100,], aes(tf = cca, order = integrate(cca, definite = TRUE))) + 
   geom_lasagna(size = 2.5) + theme(axis.text.y = element_text(size = 6)) + 
-    facet_wrap(~sex, ncol = 2, scales = "free")
+    facet_wrap(~ case, ncol = 2, scales = "free")
+```
+
+# Wrangling `tf`s inside data frames
+
+## Wrangling `tf`s inside data frames: `dplyr`
+
+All `dplyr` verbs work well with `tf`-columns - for example:
+
+```{r, dplyr}
+# group-wise functional means:
+dti %>% group_by(case, sex) %>% summarize(mean_rcst = mean(rcst, na.rm = TRUE)) %>% ungroup
+
+# which subjects go below cca = .26:
+dti %>% filter(anywhere(cca, value < .26))
+
+# center & scale: 
+dti %>% mutate(cca = tfb(cca), cca_z = (cca - mean(cca))/sd(cca)) %>% glimpse
+```
+
+## Wrangling `tf`s inside data frames: `tidyr`
+
+`tidyfun` provides variants of `tidyr`-verbs to reshape and reformat functional data while keeping it in sync with other covariates:
+
+```{r, tidyr}
+dti_wide = dti %>% tf_spread(cca); dti_wide[, 1:10] %>% glimpse()  
+dti_wide %>% tf_gather(matches("cca_")) %>% glimpse
+
+dti_long = dti %>% tf_unnest(cca); dti_long %>% glimpse()  
+dti_long %>% tf_nest(matches("cca_"), id = id, arg = arg)  
 ```
 
 
 
-##  TODOs: 
+## Outlook
 
-
-
-```{r, data, eval = FALSE}
-head(dti)
-dim(dti)
-nrow(dti %>%  filter(rcst[, .7] > .8))
-
-plot(dti$cca, points = FALSE)
-lines(mean(dti$cca), col = "red")
-lines(mean(dti$cca) + sd(dti$cca), col = "blue", lty = 2)
-lines(mean(dti$cca) - sd(dti$cca), col = "blue", lty = 2)
-
-plot(dti$rcst, type = "lasagna")
-funplot(dti$rcst, type = "lasagna")
-funplot(dti$rcst) + theme_minimal()
-
-## to come:
-## dti %>% group_by(sex) %>% mutate(mean_cca = mean(cca), sd_cca = sd(cca))
-```
-
-  - derivatives: might be fairly easy for `tfb` since `mgcv` offers derivatives of its bases
-  - registering/warping should be mostly easy, just overwrite `argvals` (or wrap warping around `evaluator`...?)
-  - intensive exing with diverse use-cases
+  - registering/warping should be mostly easy, just overwrite `arg` (or wrap warping around `evaluator`...?)
   - extensions for multivariate and image data (will be hard)
   - integration with renovated `refund` for modeling etc.
 
