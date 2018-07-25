@@ -166,12 +166,13 @@ tfd.list <- function(data, arg = NULL, domain = NULL,
 #' tfd(f, interpolate = TRUE, arg = seq(0,1,l=21))
 #' @rdname tfd
 tfd.tf <- function(data, arg = NULL, domain = NULL, 
-    evaluator = approx_linear, signif = 4, ...) {
+    evaluator = approx_linear, signif = NULL, ...) {
   evaluator <- quo_name(enexpr(evaluator))
   arg <- ensure_list(arg %||% arg(data))
   evaluations <- evaluate(data, arg)
   names(evaluations) <- names(data)
   domain <- domain %||% domain(data)
+  signif <- signif %||% attr(data, "signif_arg")
   new_tfd(arg, evaluations, regular = (length(arg) == 1),
     domain = domain, evaluator = evaluator, 
     signif = signif)
