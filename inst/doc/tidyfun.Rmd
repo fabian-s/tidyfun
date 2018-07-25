@@ -19,7 +19,7 @@ set.seed(1221)
 
 # `tidyfun`
 
-The goal of tidyfun is to provide a `tidyverse`-compliant, accessible and well-documented way to handle functional data during data wrangling and exploratory analysis.
+The goal of tidyfun is to provide a `tidyverse`-compliant, accessible and well-documented way to deal with functional data, specifically for data wrangling and exploratory analysis.  
 
 ```{r, data}
 head(dti)
