@@ -33,7 +33,7 @@ string_rep_tf <- function(f, signif_arg = NULL,
 #' @param n how many elements of `x` to print out
 #' @export
 print.tf <- function(x, n  = 10, ...) {
-  cat(paste0("tf[",length(x),"] on (", domain(x)[1], ",",
+  cat(paste0(class(x)[2],"[",length(x),"] on (", domain(x)[1], ",",
     domain(x)[2], ")"))
   invisible(x)
 }
@@ -102,7 +102,6 @@ format.tf <- function(x, digits = 2, nsmall = 0, width = options()$width,
     ~ paste0(substr(.x, 1, width - 3), "...")))
 }
 
-
 #-------------------------------------------------------------------------------
 
 ## tibble methods:
@@ -117,7 +116,7 @@ format.tf <- function(x, digits = 2, nsmall = 0, width = options()$width,
 #' @importFrom pillar type_sum obj_sum pillar_shaft
 #' @details see [pillar::type_sum()]
 type_sum.tf <- function(x, ...) {
-  class(x)[length(class(x)) - 1]
+  class(x)[2]
 }
 
 #' @rdname tftibble
