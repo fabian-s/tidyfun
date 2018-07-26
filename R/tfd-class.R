@@ -168,7 +168,7 @@ tfd.list <- function(data, arg = NULL, domain = NULL,
 tfd.tf <- function(data, arg = NULL, domain = NULL, 
     evaluator = approx_linear, signif = NULL, ...) {
   evaluator <- quo_name(enexpr(evaluator))
-  domain <- domain %||% range(unlist(arg)) %||% domain(data)
+  domain <- (domain %||% unlist(arg) %||% domain(data)) %>% range
   signif <- signif %||% attr(data, "signif_arg")
   arg <- ensure_list(arg %||% arg(data))
   evaluations <- evaluate(data, arg)
