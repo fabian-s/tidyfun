@@ -169,7 +169,7 @@ tfd.tf <- function(data, arg = NULL, domain = NULL,
     evaluator = NULL, signif = NULL, ...) {
   evaluator <- if (is_tfd(data) & is.null(evaluator)) {
     attr(data, "evaluator_name")
-  } else quo_name(approx_linear)
+  } else "approx_linear"
   domain <- (domain %||% unlist(arg) %||% domain(data)) %>% range
   signif <- signif %||% attr(data, "signif_arg")
   arg <- ensure_list(arg %||% arg(data))
