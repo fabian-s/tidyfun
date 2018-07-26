@@ -33,7 +33,7 @@ string_rep_tf <- function(f, signif_arg = NULL,
 #' @param n how many elements of `x` to print out
 #' @export
 print.tf <- function(x, n  = 10, ...) {
-  cat(paste0(class(x)[2],"[",length(x),"] on (", domain(x)[1], ",",
+  cat(paste0(tail(class(x), 2)[-2],"[",length(x),"] on (", domain(x)[1], ",",
     domain(x)[2], ")"))
   invisible(x)
 }
