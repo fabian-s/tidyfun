@@ -75,8 +75,8 @@ where <- function(f, cond, return = c("all", "first", "last", "range", "any"),
     where_at <- map_lgl(where_at, ~ length(.x) > 0)
   }
   where_at[is.na(f)] <- NA
-  where_at <- map_if(where_at, ~ length(.x) == 0, ~ {NA})
   if (return == "all") return(where_at)
+  where_at <- map_if(where_at, ~ length(.x) == 0, ~ {NA})
   if (return == "range") {
     where_at <- map_if(where_at, ~ all(is.na(.x)), ~ {c(NA, NA)}) %>% 
       do.call(what = rbind, args = .) %>% as.data.frame %>% 
