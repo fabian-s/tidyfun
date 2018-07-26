@@ -166,8 +166,10 @@ tfd.list <- function(data, arg = NULL, domain = NULL,
 #' tfd(f, interpolate = TRUE, arg = seq(0,1,l=21))
 #' @rdname tfd
 tfd.tf <- function(data, arg = NULL, domain = NULL, 
-    evaluator = approx_linear, signif = NULL, ...) {
-  evaluator <- quo_name(enexpr(evaluator))
+    evaluator = NULL, signif = NULL, ...) {
+  evaluator <- if (is_tfd(data) & is.null(evaluator)) {
+    attr(data, "evaluator_name")
+  } else quo_name(approx_linear)
   domain <- (domain %||% unlist(arg) %||% domain(data)) %>% range
   signif <- signif %||% attr(data, "signif_arg")
   arg <- ensure_list(arg %||% arg(data))
