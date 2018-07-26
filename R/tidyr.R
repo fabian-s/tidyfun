@@ -222,30 +222,30 @@ tf_unnest <- function(data, ..., .arg, .drop = NA, .id = "id", .sep = "_",
   arg_pattern <- paste0(.sep, "arg$")
   same_arg <- select(ret, c(matches("arg"), matches(!!!arg_pattern))) %>% 
     summarize_all(digest::digest) %>% t %>% duplicated %>%
-    tail(-1) %>% row.names
+    tail(-1) %>% {row.names(.)[which(.)]}
   id_pattern <- paste0(.sep, "id$")
   same_id <- select(ret, c(matches("id", ignore.case = FALSE), matches(!!!id_pattern))) %>%
     summarize_all(digest::digest) %>% t %>% duplicated %>%
-    tail(-1) %>% row.names
+    tail(-1) %>% {row.names(.)[which(.)]}
   if (length(same_arg)) ret <- ret %>% select(- !!same_arg)
   if (length(same_id)) ret <- ret %>% select(- !!same_id)
   if (length(c(same_arg, same_id))) {
-    message("Duplicate columns ", paste(same_arg, collapse = ", "), " ", 
-      paste(same_id, collapse = ", "),
+    message("Duplicate column", ifelse(length(c(same_arg, same_id)) > 1, "s", ""),
+      paste(same_arg, collapse = ", "), " ", paste(same_id, collapse = ", "),
       " created by unnesting were dropped.")
   }
-  one_arg_left <- length(vars_select(names(ret), matches(!!!arg_pattern))) == 1
-  if (!("arg" %in% names(ret)) & one_arg_left) {
-    new_arg <- select(ret, matches(!!!arg_pattern)) %>% names
-    ret <- rename(ret, arg = !!new_arg)
-    message("Renamed ", sQuote(new_arg), " to 'arg'.")
-  }
-  one_id_left <- length(vars_select(names(ret), matches(!!!id_pattern))) == 1
-  if (!("id" %in% names(ret)) & one_id_left) {
-    new_id <- select(ret, matches(!!!id_pattern)) %>% names
-    ret <- rename(ret, id = !!new_id)
-    message("Renamed ", sQuote(new_id), " to 'id'.")
-  }  
+  # one_arg_left <- length(vars_select(names(ret), matches(!!!arg_pattern))) == 1
+  # if (!("arg" %in% names(ret)) & one_arg_left) {
+  #   new_arg <- select(ret, matches(!!!arg_pattern)) %>% names
+  #   ret <- rename(ret, arg = !!new_arg)
+  #   message("Renamed ", sQuote(new_arg), " to 'arg'.")
+  # }
+  # one_id_left <- length(vars_select(names(ret), matches(!!!id_pattern))) == 1
+  # if (!("id" %in% names(ret)) & one_id_left) {
+  #   new_id <- select(ret, matches(!!!id_pattern)) %>% names
+  #   ret <- rename(ret, id = !!new_id)
+  #   message("Renamed ", sQuote(new_id), " to 'id'.")
+  # }  
   ret
 } 
 
