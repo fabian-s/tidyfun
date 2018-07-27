@@ -19,6 +19,7 @@ output:
 ```{r setup, include=FALSE}
 library(knitr)
 knitr::opts_chunk$set(
+  collapse = TRUE,
   size = 'footnotesize',
   cache = TRUE,
   fig.width = 8, fig.height = 5.5, 
@@ -127,7 +128,9 @@ dti
 
 ```{r}
 ex %>% evaluations() %>% str
+
 ex %>% arg() %>% str
+
 ex %>% domain() 
 ```
 
@@ -137,6 +140,7 @@ ex %>% domain()
 
 ```{r}
 evaluator(ex) %>% str
+
 evaluator(ex) = approx_spline 
 ```
 
@@ -146,7 +150,9 @@ evaluator(ex) = approx_spline
 
 ```{r, out.height = '.30\\textheight', fig.width = 6, fig.height = 4.5}
 dti$rcst[1:2]
+
 dti$rcst[1:2] %>% arg() %>% str
+
 dti$rcst[1:2] %>% plot(pch = "x", col = viridis(2))
 ```
 
@@ -160,7 +166,9 @@ Functional data in basis representation:
 - significant memory and time savings:
 ```{r}
 refund::DTI$cca %>% object.size() %>% print(units = "Kb")
+
 dti$cca %>% object.size() %>% print(units = "Kb")
+
 dti$cca %>% tfb(verbose = FALSE) %>% object.size() %>% print(units = "Kb")
 ```
 
@@ -171,6 +179,7 @@ dti$cca %>% tfb(verbose = FALSE) %>% object.size() %>% print(units = "Kb")
 
 ```{r, message = TRUE}
 ex_b = ex %>% tfb(); ex_b[1:2]
+
 ex[1:2] %>% tfb(bs = "tp", k = 55)
 ```
 
@@ -222,6 +231,7 @@ lines(ex %>% tfb_fpc(pve = .95), col = "blue")
 
 ```{r}
 ex[1:2]
+
 ex[1:2] = ex[2:1]
 ex
 ```
@@ -230,7 +240,9 @@ ex
 
 ```{r, warning  = FALSE}
 ex[1:2, seq(0, 1, l = 3)]
+
 ex["B", seq(0, .15, l = 3), interpolate = FALSE]
+
 ex[1:2, seq(0, 1, l = 2), matrix = FALSE] %>% str
 ```
 
@@ -238,12 +250,15 @@ ex[1:2, seq(0, 1, l = 2), matrix = FALSE] %>% str
 
 ```{r, echo = FALSE}
 n_ex = names(ex)
+
 ex = unname(ex)
 ```
 
 ```{r}
 ex[1] + ex[1] == 2 * ex[1]
+
 log(exp(ex[2])) == ex[2]
+
 ex - (2:-2) != ex 
 ```
 
@@ -257,6 +272,7 @@ names(ex) = n_ex
 c(mean = mean(ex), sd = sd(ex))
 
 depth(ex) ## Modified Band-2 Depth (à la Sun/Genton/Nychka, 2012), others to come.
+
 median(ex) == ex[which.max(depth(ex))]
 ```
 
@@ -301,8 +317,11 @@ Find `arg`uments $t$ satisfying a condition on `value` $f(t)$ (and `arg`ument $t
 
 ```{r}
 ex %>% anywhere(value > .65)
+
 ex[1:2] %>% where(value > .6, "all")
+
 ex[2] %>% where(value > .6, "range")
+
 ex %>% where(value > .6 & arg > .5, "first")
 ```
 
@@ -316,7 +335,9 @@ lines(median(ex), col = pal_5[3], lwd = 4)
 
 ```{r}
 ex %>% where(value == max(value), "first")
+
 ex[c("A", "D")] %>% zoom(.5, 1) %>% where(value == max(value), "first")
+
 ex %>% zoom(0.2, 0.6) %>% anywhere(value <= median(ex)[, arg])
 ```
 
@@ -326,8 +347,11 @@ To & from list, matrix or data frame with `"id"`,`"arg"`,`"value"`-columns:
 
 ```{r}
 ex_matrix = ex %>% as.matrix(); ex_matrix[1:2, 1:3]
+
 ex_df = ex %>% as.data.frame(); str(ex_df)
+
 ex_matrix[1:2, ] %>% tfd()
+
 tfd(ex_df) == tfd(ex_matrix)
 ```
 
@@ -403,11 +427,15 @@ dti %>%
 
 `tidyfun` provides `tf_` variants of `tidyr`-verbs to reshape and reformat functional data while keeping it in sync with other covariates:
 
-- `tf_spread`: `tf` $\rightarrow$ columns for each `arg`
-- `tf_gather`: columns for each `arg` $\rightarrow$ `tf`
+\vskip 2em
 
-- `tf_nest`  : data in long format (`id`, `arg`, `value`)  $\rightarrow$ `tf`
-- `tf_unnest`: `tf` $\rightarrow$ data in long format (`id`, `arg`, `value`)  
+- `tf_spread:` `tf` $\rightarrow$ columns for each `arg`
+- `tf_gather:` columns for each `arg` $\rightarrow$ `tf`
+
+\vskip .5em
+
+- `tf_nest  :` data in long format (`id`, `arg`, `value`)  $\rightarrow$ `tf`
+- `tf_unnest:` `tf` $\rightarrow$ data in long format (`id`, `arg`, `value`)  
 
 ## Wrangling `tf`s inside data frames: `tidyr`
 
@@ -432,13 +460,13 @@ dti_long = dti %>% tf_unnest(cca); dti_long %>% glimpse()
 dti_long %>% tf_nest(cca_value, .id = cca_id, .arg = cca_arg) %>% glimpse()
 ```
 
-# Fin
+# Wrap-Up
 
-## Summary
+## 
 
 
 \begin{center}
-\textbf{... I like it. You might, too, give it a spin!}\footnote{\emph{Currently a moving target. Still early $\beta$, some kinks need to be worked out.}}
+\textbf{... I like it. You might, too, give it a spin!}\footnote{\emph{Caveat emptor. Currently a moving target, still fairly early Beta.}}
 
 
 \href{https://github.com/fabian-s/tidyfun}{\texttt{https://github.com/fabian-s/tidyfun}}
@@ -453,13 +481,13 @@ Next up:
 
   - integrate `fda` bases & penalties, wavelet bases
   - improve & extend `ggplot2` interface
-  - functions for registering & warping 
+  - functions for registering & warping
   - validate & improve
   
 Version 1.0:
 
-  - extensions for multivariate functions
+  - extensions for multivariable functions (small images, too...?)
   - much more extensive documentation & tests
   - integration with **`refund`** for modeling and inference
 
-# Thanks. \vskip 2em \href{https://github.com/fabian-s/tidyfun}{\texttt{https://github.com/fabian-s/tidyfun}} \vskip 1em \tiny I don't even have references.
+# Thanks. \vskip 2em \href{https://github.com/fabian-s/tidyfun}{\texttt{https://github.com/fabian-s/tidyfun}} \vskip 2em \tiny (I don't even have references.)
