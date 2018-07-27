@@ -15,6 +15,10 @@ new_tfd <- function(arg, datalist, regular, domain, evaluator, signif = 4) {
     datalist <- map2(datalist, arg, 
       ~ list(arg = unname(signif(.y[!is.na(.x)], signif)), 
           value = unname(.x[!is.na(.x)])))
+    n_evals <- map(datalist, ~ length(.x$value))
+    if (any(n_evals == 0)) warning("NA entries created.")
+    datalist <- map_if(datalist, n_evals == 0, 
+      ~ {list(arg = domain[1], value = NA)})
     arg <- numeric(0)
     class <- "tfd_irreg"
   } else {
