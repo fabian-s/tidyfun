@@ -3,11 +3,11 @@ title: '**`tidyfun`**: Tidy Functional Data'
 subtitle: 'A new framework for representing and working with function-valued data in **`R`**'
 date: "JSM 2018"
 author: 
-    - "Fabian Scheipl$^1$"
-    - "Jeff 'Arthur Geoffrey' Goldsmith$^2$"
+    - "Fabian Scheipl$^\\star$"
+    - "Jeff Goldsmith$^\\dag$"
 institute: 
-    - "$^1$: Dept. of Statistics, LMU Munich"
-    - "$^2$: Columbia University Mailman School of Public Health"
+    - "$\\star$: Dept. of Statistics, LMU Munich"
+    - "$\\dag$: Columbia University Mailman School of Public Health"
 output: 
   beamer_presentation: 
     keep_tex: yes 
@@ -62,10 +62,12 @@ ex = tfd(ex_data, signif = 2)
 ## This is what we're aiming for:
 
 ```{r, out.height = '.4\\textheight', fig.width = 6, fig.height = 2}
+glimpse(dti)
+
 # group-wise functional medians:
 medians = dti %>% group_by(case, sex) %>% summarize(median_rcst = median(rcst))
-ggplot(medians) + geom_spaghetti(aes(tf = median_rcst, col = sex, linetype = case))
-glimpse(dti)
+
+ggplot(medians) + geom_spaghetti(aes(y = median_rcst, col = sex, linetype = case), size = 1)
 ```
 
 ## **`tidyfun`**
@@ -89,17 +91,19 @@ data wrangling and exploratory analysis.
 **`tf`** is a new data type for (vectors of) functional data: 
 
 - an abstract superclass for functional data in 2 forms:
-    - as (argument, value)-tuples: subclass **`tfd`**, also irregular or sparse
-    - or in basis representation: subclass **`tfb`**
+    - as (argument, value)-tuples: subclass **`tfd`** (regular, irregular)
+    - or in basis representation: subclass **`tfb`** (splines, FPCs)
     
-- basically, a `list` of numeric vectors  
-  (... since `list`s work well as columns of data frames ...)
-
 - with additional attributes that define *function-like* behavior:
     - how to **evaluate** the given "functions" for new arguments
     - their **domain** 
     - the **resolution** of the argument values
 
+- basically, a `list` of numeric vectors  
+  (... since `list`s work well as columns of data frames ...)
+    - evaluations for `tfd`
+    - basis coefficients for a joint basis for `tfb`
+    
 - `S3` based
 
 ## Example Data
@@ -167,7 +171,7 @@ Functional data in basis representation:
 
  - represented as a list of **`coefficients`** and a common **`basis_matrix`** of basis function evaluations on a vector of `arg`-values.
  - contains a **`basis`** function that defines how to compute the basis for new **`arg`**s and how to differentiate/integrate.
- - (internal) flavors: **`mgcv`**-spline bases and FPCs (wavelets to be added)
+ - use either **`mgcv`**-spline bases or (F)PCs; wavelets to be added
 - significant memory and time savings:
 ```{r}
 refund::DTI$cca %>% object.size() %>% print(units = "Kb")
@@ -178,42 +182,52 @@ dti$cca %>% tfb(verbose = FALSE) %>% object.size() %>% print(units = "Kb")
 ```
 
 
-## **`tf`** subclass: **`tfb`** spline basis
+## **`tf`** subclasses: **`tfb`**
+
+**`tfb`** spline basis:
 
 - accepts all arguments of `mgcv`'s `s()`-syntax 
 - either does a penalized fit with (GCV-based) function-specific smoothing or unpenalized.
 
-```{r, message = TRUE}
-ex_b = ex %>% tfb(); ex_b[1:2]
-
-ex[1:2] %>% tfb(bs = "tp", k = 55)
-```
-
-## **`tf`** subclass: **`tfb`** spline basis
-
-```{r, eval = FALSE}
-ex  %>% plot()
-ex_b %>% plot(col = "red")
-ex %>% tfb(k = 35, penalized = FALSE) %>% lines(col = "blue")
-```
-```{r, echo = FALSE, results = 'hide', out.height = '.4\\textheight', fig.width = 8, fig.height = 4}
-layout(t(1:2))
-plot(ex, alpha = 1)
-plot(ex_b, col = "red")
-lines(tfb(ex, k = 35, penalized = FALSE), col = "blue")
-```
-
-## **`tf`** subclass: **`tfb`** FPC-based
+**`tfb`** FPC-based
 
 - uses either 
     - simple unregularized SVD of the data matrix ("`smooth = FALSE`")
     - or smoothed covariance estimate from `refund::fpca.sc`
 - corresponding FPC basis and mean function saved as `tfd`-object, observations are linear combinations of those.
 
+<!--
+## **`tf`** subclasses: **`tfb`**
+
+```{r, message = TRUE}
+ex_b = ex %>% tfb(); ex_b[1:2]
+
+ex[1:2] %>% tfb(bs = "tp", k = 55)
+```
+-->
+
+## **`tf`** subclass: **`tfb`** spline basis
+
+```{r, eval = FALSE}
+ex  %>% plot()
+ex %>% tfb(k = 20, bs = "ps", m = c(2,1)) %>% plot(col = "red")
+ex %>% tfb(k = 45, penalized = FALSE) %>% lines(col = "blue")
+```
+```{r, echo = FALSE, results = 'hide', out.height = '.4\\textheight', fig.width = 8, fig.height = 4}
+layout(t(1:2))
+plot(ex, alpha = 1)
+plot(tfb(ex, k = 20, bs = "ps", m = c(2,1)), col = scales::alpha("red", 0.5),
+  ylab="tfb(ex)")
+lines(tfb(ex, k = 45, penalized = FALSE), col = scales::alpha("blue", 0.5))
+```
+<!--
+## **`tf`** subclass: 
+
 ```{r}
 (ex %>% tfb_fpc(smooth = FALSE, pve = .999))
 (ex %>% tfb_fpc(pve = .95))
 ```
+-->
 
 ## **`tf`** subclass: **`tfb`** FPC-based
 
@@ -226,8 +240,9 @@ ex %>% tfb_fpc(pve = .95) %>% lines(col = "blue")
 ```{r, echo = FALSE, results = 'hide', out.height = '.4\\textheight', fig.width = 8, fig.height = 4}
 layout(t(1:2))
 plot(ex, alpha = 1)
-plot(ex  %>% tfb_fpc(smooth = FALSE, pve = .999), col = "red", ylab = "tfb_fpc(ex)")
-lines(ex %>% tfb_fpc(pve = .95), col = "blue")
+plot(ex  %>% tfb_fpc(smooth = FALSE, pve = .999), col = scales::alpha("red", .5),
+  ylab = "tfb_fpc(ex)")
+lines(ex %>% tfb_fpc(pve = .95), col = scales::alpha("blue", .5))
 ```
 
 # `tf`-Class: Methods
@@ -250,7 +265,7 @@ ex[1:2, seq(0, 1, l = 3)]
 
 ex["B", seq(0, .15, l = 3), interpolate = FALSE]
 
-ex[1:2, seq(0, 1, l = 2), matrix = FALSE] %>% str
+ex[1:2, seq(0, .15, l = 3), matrix = FALSE] %>% str
 ```
 
 ## Compare & compute
@@ -374,11 +389,11 @@ plot(ex, type = "lasagna", col = viridis(50))
 
 ## Visualize: `ggplot2`
 
-New **pasta-themed** `geom`s with a **`tf`**-aesthetic for functional data:
+New **pasta-themed** `geom`s and plots for functional data:
 
 - **`geom_spaghetti`** for lines
 - **`geom_meatballs`**  for (lines &) points
-- **`geom_lasagna`** with an **`order`**-aesthetic to sort the lasagna layers
+- **`gglasagna`** with **`order`**-argument to sort the lasagna layers
 
 To come:
 
@@ -389,24 +404,24 @@ To come:
 ## Visualize: `ggplot2`
 
 ```{r, eval = FALSE}
-ggplot(dti, aes(tf = cca, colour = case)) +
+ggplot(dti, aes(y = cca, colour = case)) +
   geom_spaghetti() + facet_wrap(~ sex)
 ```
 
 ```{r, dti-fig1, echo = FALSE, out.height = '.7\\textheight', fig.width = 12, fig.height = 7}
 ggplot(dti) + 
-  geom_spaghetti(aes(tf = cca, col = case, alpha = .2 + .4*(case == "control"))) + facet_wrap(~ sex) + scale_alpha(guide = 'none', range = c(.2, .4))
+  geom_spaghetti(aes(y = cca, col = case, alpha = .2 + .4*(case == "control"))) + facet_wrap(~ sex) + scale_alpha(guide = 'none', range = c(.2, .4))
 ```
 
 ## Visualize: `ggplot2`
 
 ```{r, eval = FALSE}
-ggplot(dti, aes(tf = cca, order = integrate(cca, definite = TRUE))) + 
-  geom_lasagna() + facet_wrap(~ case)
+gglasagna(dti,cca, order = integrate(cca, definite = TRUE)) + 
+  facet_wrap(~ case)
 ```
 ```{r, dti-fig2, echo = FALSE, out.height = '.7\\textheight', fig.width = 12, fig.height = 7}  
-ggplot(dti[1:100,], aes(tf = cca, order = integrate(cca, definite = TRUE))) + 
-  geom_lasagna(size = 2.5) + theme(axis.text.y = element_text(size = 6)) + 
+gglasagna(dti[1:100,], cca, order = integrate(cca, definite = TRUE), 
+  arg = seq(0,1,l = 101)) + theme(axis.text.y = element_text(size = 6)) + 
     facet_wrap(~ case, ncol = 2, scales = "free")
 ```
 
