@@ -99,12 +99,13 @@ tf_evaluate.tfb <- function(object, ..., arg) {
       )
     )
   }
-  if (!inherits(object, "tfb_fpc")) {
+  if (!inherits(object, c("tfb_fpc", "tfb_wavelet"))) {
     ret <- map(ret, attr(object, "family")$linkinv)
   }  
   names(ret) <- names(object)
   ret
 }
+
 
 evaluate_tfb_once <- function(x, arg, coefs, basis, X, resolution) {
   seen <- match(
@@ -114,7 +115,7 @@ evaluate_tfb_once <- function(x, arg, coefs, basis, X, resolution) {
   seen_index <- na.omit(seen)
   seen <- !is.na(seen)
   if (all(seen)) return(drop(X[seen_index, , drop = FALSE] %*% coefs))
-  Xnew <- X[rep(1, length(x)), ]
+  Xnew <- matrix(X[rep(1, length(x)), ], nrow = length(x))
   if (any(seen)) Xnew[seen, ] <- X[seen_index, , drop = FALSE]
   Xnew[!seen, ] <- basis(x[!seen])
   drop(Xnew %*% coefs)
